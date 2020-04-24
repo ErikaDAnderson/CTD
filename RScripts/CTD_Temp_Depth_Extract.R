@@ -74,12 +74,9 @@ for (i in 1:numFiles) {
   # assing channels to data columns
   colnames(df) <- chandf$V2
   
-  # should we transform pressure into depth???
-  # almost equivalent and need to include latitude in calculation
-  
-  # subset to values greater than 9 and less than 11 decibars
-  # note that these are not exactly the same as depth in meters but close
-  pressure10 <- subset(df, Pressure > 8 & Pressure < 12)
+  # note that 10 decibars of pressure = 9.931 m depth sea water
+  # subset to 
+  pressure10 <- subset(df, Pressure > (9.931 - 1) & Pressure < (9.931 + 1))
   meantemp10 <- round(mean(pressure10$`Temperature:Primary`, na.rm = TRUE), 3)
   
   # make into tibble

@@ -29,10 +29,10 @@ vignette("oce")
 ###############################
 # try load one data file
 stn1 <- read.ctd(
-  file = here("Input", "2015-15-processed", "Archive", "CTD", "2015-15-0002.ctd"),
-  columns = c("Pressure", "pHSBENominal", "NumBins"),
+  file = here("Input", "Johan", "2019-052-0004.cnv"),
+  columns = c("Depth", "Temp", "Unknown"),
   station = "Set 1",
-  missingValue = FALSE,
+  missingValue = "-9.990e-29",
   deploymentType = "profile")
 
 ###############################

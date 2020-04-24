@@ -6,6 +6,8 @@
 # Date: 2020-04
 #
 # find cruise, station, temperature at specific depths for all ctd casts
+# two types of tow name (numeric or character)
+# both are saved and choose from csv file
 # save as csv file 
 #
 ######################################################################################
@@ -84,28 +86,38 @@ for (i in 1:numFiles) {
                       "Station" = station,
                       "Latitude" = lat,
                       "Longitude" = long,
-                     "Temp10db" = meantemp10,
+                     "Temp10m" = meantemp10,
                      "File" = i,)
 
   mylist[[i]] <- loopData
 }
 
 # take out of list
-df <- do.call(rbind.data.frame, mylist)
+df_orig <- do.call(rbind.data.frame, mylist)
 
 # convert lattitude and longitude to decimal degrees
-df <- df %>%
+df <- df_orig %>%
   mutate(LatDeg = as.numeric(str_extract(Latitude, "^[0-9]{2}")),
          LatMinDec = as.numeric(str_extract(Latitude, "[ ]+ [0-9]+\\.[0-9]+"))/60,
          Latitude = LatDeg + LatMinDec,
          LongDeg = as.numeric(str_extract(Longitude, "^[0-9]{3}")),
          LongMinDec = as.numeric(str_extract(Longitude, "[ ]+ [0-9]+\\.[0-9]+"))/60,
-         Longitude = (LongDeg + LongMinDec) * -1) %>%
-  select(-LatDeg, -LatMinDec, -LongDeg, -LongMinDec)
-
+         Longitude = (LongDeg + LongMinDec) * -1,
+         Year = as.numeric(str_extract(Cruise, "^[0-9]{4}")),
+         Survey = str_extract(Cruise, "[0-9]+$"),
+         Prefix = if_else(Year < 2016, "HS", "BCSI-"),
+         #**** need to choose which to use based on type of tow number or character ****
+         TowNum = str_pad(str_extract(Station, "[0-9]+$"), 3, "left", pad = "0"),
+         STATION_ID_NUM = str_c(Prefix, Year, Survey, "-", TowNum, sep = ""),
+         STATION_ID_CHR = str_c(Prefix, Year, Survey, "-", Station, sep = ""),
+         
+         # remove tows where there was no temperature near 10 m
+         Temp10m = if_else(is.nan(Temp10m), NA_real_, Temp10m)) %>%
+  select(STATION_ID_CHR, STATION_ID_NUM, Year, Cruise, Station, 
+         Latitude, Longitude, Temp10m, File) 
 
 # write as csv to review
-write_csv(df, here("Output", "meanTemp10db.csv"), na = "")
+write_csv(df, here("Output", "meanTemp10m.csv"), na = "")
 
 # get max lat and long for survey
 meanLat <- mean(df$Latitude, na.rm = TRUE)

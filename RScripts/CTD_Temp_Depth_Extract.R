@@ -5,9 +5,9 @@
 # Modified: Erika Anderson
 # Date: 2020-04
 #
-# find cruise, station, temperature at specific depths for all ctd casts
+# find cruise, station, temperature at specific depths for ctd casts
 # two types of tow name (numeric or character)
-# both are saved and choose from csv file
+# both are saved and must choose from csv file
 # save as csv file 
 #
 ######################################################################################
@@ -24,7 +24,7 @@ library(mapview) # to save leaflet as png
 
 ###################################
 # directory with ctd files
-dir <- here("Input", "2015-15-processed", "Archive", "CTD")
+dir <- here("Input", "CTD_DATA")
 
 # get all ctd files in folder as vector
 ctdFiles = list.files(dir, pattern = "ctd", full.names = TRUE)
@@ -87,8 +87,14 @@ for (i in 1:numFiles) {
     thispressurePlus <- d2p(thisdepth, thislatitude) + 1
     thispressureMinus <- d2p(thisdepth, thislatitude) - 1
     thispressuredf <- subset(thisdf, Pressure > thispressureMinus & Pressure < thispressurePlus)
+    
+    if ("Temperature:Primary" %in% colnames(thisdf)) {
     meantemp <- round(mean(thispressuredf$`Temperature:Primary`, na.rm = TRUE), 3)
     
+    } else {
+      
+      meantemp <- round(mean(thispressuredf$`Temperature:Secondary`, na.rm = TRUE), 3)
+          }
   }
   
 
@@ -143,24 +149,38 @@ df <- df_orig %>%
          STATION_ID_NUM = str_c(Prefix, Year, Survey, "-", TowNum, sep = ""),
          STATION_ID_CHR = str_c(Prefix, Year, Survey, "-", Station, sep = ""),
          
-         # remove tows where there was no temperature near 10 m
-         Temp10m = if_else(is.nan(Temp10m), NA_real_, Temp10m)) %>%
+         # remove tows where there was no temperature near depth
+         Temp5m = if_else(is.nan(Temp5m), NA_real_, Temp5m),
+         Temp6m = if_else(is.nan(Temp6m), NA_real_, Temp6m),
+         Temp7m = if_else(is.nan(Temp7m), NA_real_, Temp7m),
+         Temp8m = if_else(is.nan(Temp8m), NA_real_, Temp8m),
+         Temp9m = if_else(is.nan(Temp9m), NA_real_, Temp9m),
+         Temp10m = if_else(is.nan(Temp10m), NA_real_, Temp10m),
+         Temp11m = if_else(is.nan(Temp11m), NA_real_, Temp11m),
+         Temp12m = if_else(is.nan(Temp12m), NA_real_, Temp12m),
+         Temp13m = if_else(is.nan(Temp13m), NA_real_, Temp13m),
+         Temp14m = if_else(is.nan(Temp14m), NA_real_, Temp14m),
+         Temp15m = if_else(is.nan(Temp15m), NA_real_, Temp15m)) %>%
   select(STATION_ID_CHR, STATION_ID_NUM, Year, Cruise, Station, 
-         Latitude, Longitude, Temp10m, File) 
+         Latitude, Longitude, Temp5m, Temp6m, Temp7m, Temp8m, Temp9m, Temp10m,
+         Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) 
 
 # write as csv to review
-write_csv(df, here("Output", "meanTemp10m.csv"), na = "")
+#write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")
+write_csv(df, here("Output", "csvFiles", "CTD_DATA.csv"), na = "")
 
-# get max lat and long for survey
-meanLat <- mean(df$Latitude, na.rm = TRUE)
-meanLong <- mean(df$Longitude, na.rm = TRUE)
+###################################
 
-# graph results as qc
-leaflet(df) %>% addTiles() %>%
-  setView(lng = meanLong, lat = meanLat, zoom = 6) %>%
-  addHeatmap(lng = ~Longitude, lat = ~Latitude, intensity = ~Temp10m, blur = 15, max = 20, radius = 12)
+# # get max lat and long for survey
+# meanLat <- mean(df$Latitude, na.rm = TRUE)
+# meanLong <- mean(df$Longitude, na.rm = TRUE)
+# 
+# # graph results as qc
+# leaflet(df) %>% addTiles() %>%
+#   setView(lng = meanLong, lat = meanLat, zoom = 6) %>%
+#   addHeatmap(lng = ~Longitude, lat = ~Latitude, intensity = ~Temp10m, blur = 15, max = 20, radius = 12)
+# 
+# # need to export manually unless you install PhantomJS
+# # https://stackoverflow.com/questions/31336898/how-to-save-leaflet-in-r-map-as-png-or-jpg-file
 
-# need to export manually unless you install PhantomJS
-# https://stackoverflow.com/questions/31336898/how-to-save-leaflet-in-r-map-as-png-or-jpg-file
-
-       
+###################################

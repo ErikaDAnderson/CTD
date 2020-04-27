@@ -53,7 +53,7 @@ for (i in 1:numFiles) {
   if (length(grep("STATION", import) > 0)) {
     station <- str_replace(import[[grep("STATION", import)]], "    STATION             : ", "")
   } else {  
-    station <- str_replace(import[[grep("EVENT NUMBER        :", import)]], "    STATION             : ", "") 
+    station <- str_replace(import[[grep("EVENT NUMBER        :", import)]], "    EVENT NUMBER        : ", "") 
   }
   
   # latitude ( include colon to prevent issues with LATITUDE 2)
@@ -98,7 +98,11 @@ for (i in 1:numFiles) {
     thispressuredf <- subset(thisdf, Pressure > thispressureMinus & Pressure < thispressurePlus)
     
     # subset for temperature column 
-    thistempdf <- select(thispressuredf, starts_with("Temperature")) 
+    thistempdf <- thispressuredf %>%
+      select(starts_with("Temperature")) %>%
+     
+      # replace -99 with NA
+      mutate_all(., na_if, -99)
     
     # variable names all start with Temperature though
     meantemp <- round(mean(thistempdf[[1]], na.rm = TRUE), 3)
@@ -188,9 +192,11 @@ df <- df_orig %>%
          Temp13m = if_else(is.nan(Temp13m), NA_real_, Temp13m),
          Temp14m = if_else(is.nan(Temp14m), NA_real_, Temp14m),
          Temp15m = if_else(is.nan(Temp15m), NA_real_, Temp15m)) %>%
+  
   select(STATION_ID_CHR, STATION_ID_NUM, Year, Cruise, Station, 
          Latitude, Longitude, Temp5m, Temp6m, Temp7m, Temp8m, Temp9m, Temp10m,
-         Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) 
+         Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) %>%
+  arrange(STAT)
 
 # write as csv to review
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")

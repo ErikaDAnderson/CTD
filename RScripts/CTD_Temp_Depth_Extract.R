@@ -17,6 +17,7 @@ library(tidyverse) # data manipulation
 library(stringi) # string manipulation
 library(here) # relative file paths
 library(measurements) # convert coordinate data
+library(seacarb) # pressure to depth at a given latitude
 library(leaflet) # mapping
 library(leaflet.extras)
 library(mapview) # to save leaflet as png
@@ -52,6 +53,10 @@ for (i in 1:numFiles) {
   # latitude
   lat <- stri_sub(str_replace(import[[grep("LATITUDE", import)]],
                               "    LATITUDE            :  ", ""), 1, 14)
+  
+  LatDeg <- as.numeric(str_extract(lat, "^[0-9]{2}"))
+  LatMinDec <- as.numeric(str_extract(lat, "[ ]+ [0-9]+\\.[0-9]+"))/60
+  thislatitude <- LatDeg + LatMinDec
 
   # longitude
   long <- stri_sub(str_replace(import[[grep("LONGITUDE", import)]],
@@ -76,17 +81,47 @@ for (i in 1:numFiles) {
   # assing channels to data columns
   colnames(df) <- chandf$V2
   
-  # note that 10 decibars of pressure = 9.931 m depth sea water
-  # subset to 
-  pressure10 <- subset(df, Pressure > (9.931 - 1) & Pressure < (9.931 + 1))
-  meantemp10 <- round(mean(pressure10$`Temperature:Primary`, na.rm = TRUE), 3)
+  # helper function to find mean temperature at different depths
+  meanTemp_fn <- function(thisdf, thisdepth, thislatitude) {
+    
+    thispressurePlus <- d2p(thisdepth, thislatitude) + 1
+    thispressureMinus <- d2p(thisdepth, thislatitude) - 1
+    thispressuredf <- subset(thisdf, Pressure > thispressureMinus & Pressure < thispressurePlus)
+    meantemp <- round(mean(thispressuredf$`Temperature:Primary`, na.rm = TRUE), 3)
+    
+  }
   
+
+  # find temperature within + or - 1 m of 
+  meantemp5 <- meanTemp_fn(df, 5, thislatitude)
+  meantemp6 <- meanTemp_fn(df, 6, thislatitude)
+  meantemp7 <- meanTemp_fn(df, 7, thislatitude)
+  meantemp8 <- meanTemp_fn(df, 8, thislatitude)
+  meantemp9 <- meanTemp_fn(df, 9, thislatitude)
+  meantemp10 <- meanTemp_fn(df, 10, thislatitude)
+  meantemp11 <- meanTemp_fn(df, 11, thislatitude)
+  meantemp12 <- meanTemp_fn(df, 12, thislatitude)
+  meantemp13 <- meanTemp_fn(df, 13, thislatitude)
+  meantemp14 <- meanTemp_fn(df, 14, thislatitude)
+  meantemp15 <- meanTemp_fn(df, 15, thislatitude)
+
+
   # make into tibble
   loopData <- tibble("Cruise" = cruise,
                       "Station" = station,
-                      "Latitude" = lat,
+                      "Latitude" = thislatitude,
                       "Longitude" = long,
+                     "Temp5m" = meantemp5,
+                     "Temp6m" = meantemp6,
+                     "Temp7m" = meantemp7,
+                     "Temp8m" = meantemp8,
+                     "Temp9m" = meantemp9,
                      "Temp10m" = meantemp10,
+                     "Temp11m" = meantemp11,
+                     "Temp12m" = meantemp12,
+                     "Temp13m" = meantemp13,
+                     "Temp14m" = meantemp14,
+                     "Temp15m" = meantemp15,
                      "File" = i,)
 
   mylist[[i]] <- loopData
@@ -97,10 +132,7 @@ df_orig <- do.call(rbind.data.frame, mylist)
 
 # convert lattitude and longitude to decimal degrees
 df <- df_orig %>%
-  mutate(LatDeg = as.numeric(str_extract(Latitude, "^[0-9]{2}")),
-         LatMinDec = as.numeric(str_extract(Latitude, "[ ]+ [0-9]+\\.[0-9]+"))/60,
-         Latitude = LatDeg + LatMinDec,
-         LongDeg = as.numeric(str_extract(Longitude, "^[0-9]{3}")),
+  mutate(LongDeg = as.numeric(str_extract(Longitude, "^[0-9]{3}")),
          LongMinDec = as.numeric(str_extract(Longitude, "[ ]+ [0-9]+\\.[0-9]+"))/60,
          Longitude = (LongDeg + LongMinDec) * -1,
          Year = as.numeric(str_extract(Cruise, "^[0-9]{4}")),
@@ -126,7 +158,7 @@ meanLong <- mean(df$Longitude, na.rm = TRUE)
 # graph results as qc
 leaflet(df) %>% addTiles() %>%
   setView(lng = meanLong, lat = meanLat, zoom = 6) %>%
-  addHeatmap(lng = ~Longitude, lat = ~Latitude, intensity = ~Temp10db, blur = 15, max = 20, radius = 12)
+  addHeatmap(lng = ~Longitude, lat = ~Latitude, intensity = ~Temp10m, blur = 15, max = 20, radius = 12)
 
 # need to export manually unless you install PhantomJS
 # https://stackoverflow.com/questions/31336898/how-to-save-leaflet-in-r-map-as-png-or-jpg-file

@@ -41,7 +41,7 @@ mylist <- list()
 # load data and find mean temperature near 10 m
 for (i in 1:numFiles) {
   
-  thisfile <- ctdFiles[[i]]
+  thisfile <- allCtdFiles[[i]]
   
   # read entire file into R
   import <- readLines(thisfile)
@@ -79,8 +79,11 @@ for (i in 1:numFiles) {
   
   # load channel names
   chandf <- read.table(thisfile, skip = chanStart, header = FALSE, nrows = numChan)
+  
+  # make channels unique for column names
+  chandf$V2 <- make.unique(as.character(chandf$V2))
 
-  # assing channels to data columns
+  # assign channels to data columns
   colnames(df) <- chandf$V2
   
   # helper function to find mean temperature at different depths
@@ -99,20 +102,20 @@ for (i in 1:numFiles) {
   
   # account for situation when no temperature or pressure recorded in ctd file
   if ("Pressure" %in% colnames(df) & ncol(select(df, starts_with("Temp"))) != 0) {
-
-  # find temperature within + or - 1 m of 
-  meantemp5 <- meanTemp_fn(df, 5, thislatitude)
-  meantemp6 <- meanTemp_fn(df, 6, thislatitude)
-  meantemp7 <- meanTemp_fn(df, 7, thislatitude)
-  meantemp8 <- meanTemp_fn(df, 8, thislatitude)
-  meantemp9 <- meanTemp_fn(df, 9, thislatitude)
-  meantemp10 <- meanTemp_fn(df, 10, thislatitude)
-  meantemp11 <- meanTemp_fn(df, 11, thislatitude)
-  meantemp12 <- meanTemp_fn(df, 12, thislatitude)
-  meantemp13 <- meanTemp_fn(df, 13, thislatitude)
-  meantemp14 <- meanTemp_fn(df, 14, thislatitude)
-  meantemp15 <- meanTemp_fn(df, 15, thislatitude)
-  
+    
+    # find temperature within + or - 1 m of 
+    meantemp5 <- meanTemp_fn(df, 5, thislatitude)
+    meantemp6 <- meanTemp_fn(df, 6, thislatitude)
+    meantemp7 <- meanTemp_fn(df, 7, thislatitude)
+    meantemp8 <- meanTemp_fn(df, 8, thislatitude)
+    meantemp9 <- meanTemp_fn(df, 9, thislatitude)
+    meantemp10 <- meanTemp_fn(df, 10, thislatitude)
+    meantemp11 <- meanTemp_fn(df, 11, thislatitude)
+    meantemp12 <- meanTemp_fn(df, 12, thislatitude)
+    meantemp13 <- meanTemp_fn(df, 13, thislatitude)
+    meantemp14 <- meanTemp_fn(df, 14, thislatitude)
+    meantemp15 <- meanTemp_fn(df, 15, thislatitude)
+    
   } else { 
     meantemp5 <- NA
     meantemp6 <- NA
@@ -125,7 +128,7 @@ for (i in 1:numFiles) {
     meantemp13 <- NA
     meantemp14 <- NA
     meantemp15 <- NA
-    }
+  }
 
   # make into tibble
   loopData <- tibble("Cruise" = cruise,
@@ -148,7 +151,7 @@ for (i in 1:numFiles) {
   mylist[[thisfile]] <- loopData
   
   # troubleshooting which file fails
-  cat(paste0(i, thisfile, "\n"))
+  cat(paste0(i, "", thisfile, "\n"))
 }
 
 # take out of list

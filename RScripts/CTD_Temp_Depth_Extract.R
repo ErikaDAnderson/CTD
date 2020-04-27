@@ -28,9 +28,11 @@ dir <- here("Input", "CTD_DATA")
 
 # get all ctd files in folder as vector
 ctdFiles = list.files(dir, pattern = "ctd", full.names = TRUE)
+CTDFiles = list.files(dir, pattern =  "CTD", full.names = TRUE)
+allCtdFiles <- c(ctdFiles, CTDFiles)
 
 # number of ctd files for loop
-numFiles = length(ctdFiles)
+numFiles = length(allCtdFiles)
 
 # create empty list to hold data
 mylist <- list()
@@ -39,10 +41,10 @@ mylist <- list()
 # load data and find mean temperature near 10 m
 for (i in 1:numFiles) {
   
-  i <- ctdFiles[[i]]
+  thisfile <- ctdFiles[[i]]
   
   # read entire file into R
-  import <- readLines(i)
+  import <- readLines(thisfile)
   
   # cruise
   cruise <- str_replace(import[[grep("MISSION", import)]], "    MISSION             : ", "")
@@ -66,7 +68,7 @@ for (i in 1:numFiles) {
   headerEnd <- grep("*END OF HEADER", import)
   
   # load data
-  df <- read.table(i, skip = headerEnd, header = FALSE)
+  df <- read.table(thisfile, skip = headerEnd, header = FALSE)
   
   # number of channels
   numChan <- as.integer(str_replace(import[[grep("NUMBER OF CHANNELS", import)]], 
@@ -76,7 +78,7 @@ for (i in 1:numFiles) {
   chanStart <- grep("TABLE: CHANNELS", import) + 2
   
   # load channel names
-  chandf <- read.table(i, skip = chanStart, header = FALSE, nrows = numChan)
+  chandf <- read.table(thisfile, skip = chanStart, header = FALSE, nrows = numChan)
 
   # assing channels to data columns
   colnames(df) <- chandf$V2
@@ -84,8 +86,8 @@ for (i in 1:numFiles) {
   # helper function to find mean temperature at different depths
   meanTemp_fn <- function(thisdf, thisdepth, thislatitude) {
     
-    thispressurePlus <- d2p(thisdepth, thislatitude) + 1
-    thispressureMinus <- d2p(thisdepth, thislatitude) - 1
+    thispressurePlus <- d2p((thisdepth + 1), thislatitude) 
+    thispressureMinus <- d2p((thisdepth - 1), thislatitude)
     thispressuredf <- subset(thisdf, Pressure > thispressureMinus & Pressure < thispressurePlus)
     
     # subset for temperature column 
@@ -94,6 +96,9 @@ for (i in 1:numFiles) {
     # variable names all start with Temperature though
     meantemp <- round(mean(thistempdf[[1]], na.rm = TRUE), 3)
   }
+  
+  # account for situation when no temperature or pressure recorded in ctd file
+  if ("Pressure" %in% colnames(df) & ncol(select(df, starts_with("Temp"))) != 0) {
 
   # find temperature within + or - 1 m of 
   meantemp5 <- meanTemp_fn(df, 5, thislatitude)
@@ -107,7 +112,20 @@ for (i in 1:numFiles) {
   meantemp13 <- meanTemp_fn(df, 13, thislatitude)
   meantemp14 <- meanTemp_fn(df, 14, thislatitude)
   meantemp15 <- meanTemp_fn(df, 15, thislatitude)
-
+  
+  } else { 
+    meantemp5 <- NA
+    meantemp6 <- NA
+    meantemp7 <- NA
+    meantemp8 <- NA
+    meantemp9 <- NA
+    meantemp10 <- NA
+    meantemp11 <- NA
+    meantemp12 <- NA
+    meantemp13 <- NA
+    meantemp14 <- NA
+    meantemp15 <- NA
+    }
 
   # make into tibble
   loopData <- tibble("Cruise" = cruise,
@@ -125,9 +143,12 @@ for (i in 1:numFiles) {
                      "Temp13m" = meantemp13,
                      "Temp14m" = meantemp14,
                      "Temp15m" = meantemp15,
-                     "File" = i,)
+                     "File" = thisfile)
 
-  mylist[[i]] <- loopData
+  mylist[[thisfile]] <- loopData
+  
+  # troubleshooting which file fails
+  cat(paste0(i, thisfile, "\n"))
 }
 
 # take out of list

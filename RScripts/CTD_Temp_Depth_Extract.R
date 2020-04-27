@@ -88,15 +88,12 @@ for (i in 1:numFiles) {
     thispressureMinus <- d2p(thisdepth, thislatitude) - 1
     thispressuredf <- subset(thisdf, Pressure > thispressureMinus & Pressure < thispressurePlus)
     
-    if ("Temperature:Primary" %in% colnames(thisdf)) {
-    meantemp <- round(mean(thispressuredf$`Temperature:Primary`, na.rm = TRUE), 3)
+    # subset for temperature column 
+    thistempdf <- select(thispressuredf, starts_with("Temperature")) 
     
-    } else {
-      
-      meantemp <- round(mean(thispressuredf$`Temperature:Secondary`, na.rm = TRUE), 3)
-          }
+    # variable names all start with Temperature though
+    meantemp <- round(mean(thistempdf[[1]], na.rm = TRUE), 3)
   }
-  
 
   # find temperature within + or - 1 m of 
   meantemp5 <- meanTemp_fn(df, 5, thislatitude)
@@ -167,7 +164,7 @@ df <- df_orig %>%
 
 # write as csv to review
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")
-write_csv(df, here("Output", "csvFiles", "CTD_DATA.csv"), na = "")
+write_csv(df, here("Output", "CTD_DATA.csv"), na = "")
 
 ###################################
 

@@ -49,8 +49,12 @@ for (i in 1:numFiles) {
   # cruise
   cruise <- str_replace(import[[grep("MISSION", import)]], "    MISSION             : ", "")
   
-  # station
-  station <- str_replace(import[[grep("STATION", import)]], "    STATION             : ", "")
+  # station if possible
+  if (length(grep("STATION", import) > 0)) {
+    station <- str_replace(import[[grep("STATION", import)]], "    STATION             : ", "")
+  } else {  
+    station <- str_replace(import[[grep("EVENT NUMBER        :", import)]], "    STATION             : ", "") 
+  }
   
   # latitude ( include colon to prevent issues with LATITUDE 2)
   lat <- stri_sub(str_replace(import[[grep("LATITUDE            :", import)]],

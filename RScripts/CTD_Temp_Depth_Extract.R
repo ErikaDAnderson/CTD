@@ -52,16 +52,16 @@ for (i in 1:numFiles) {
   # station
   station <- str_replace(import[[grep("STATION", import)]], "    STATION             : ", "")
   
-  # latitude
-  lat <- stri_sub(str_replace(import[[grep("LATITUDE", import)]],
+  # latitude ( include colon to prevent issues with LATITUDE 2)
+  lat <- stri_sub(str_replace(import[[grep("LATITUDE            :", import)]],
                               "    LATITUDE            :  ", ""), 1, 14)
   
   LatDeg <- as.numeric(str_extract(lat, "^[0-9]{2}"))
   LatMinDec <- as.numeric(str_extract(lat, "[ ]+ [0-9]+\\.[0-9]+"))/60
   thislatitude <- LatDeg + LatMinDec
 
-  # longitude
-  long <- stri_sub(str_replace(import[[grep("LONGITUDE", import)]],
+  # longitude; include colon to omit LONGITUDE 2
+  long <- stri_sub(str_replace(import[[grep("LONGITUDE           :", import)]],
                                "    LONGITUDE           : ", ""),1 , 15)
   
   # find the line with header end
@@ -157,11 +157,13 @@ for (i in 1:numFiles) {
 # take out of list
 df_orig <- do.call(rbind.data.frame, mylist)
 
-# convert lattitude and longitude to decimal degrees
+# convert longitude to decimal degrees
 df <- df_orig %>%
   mutate(LongDeg = as.numeric(str_extract(Longitude, "^[0-9]{3}")),
          LongMinDec = as.numeric(str_extract(Longitude, "[ ]+ [0-9]+\\.[0-9]+"))/60,
          Longitude = (LongDeg + LongMinDec) * -1,
+         
+         # create station id
          Year = as.numeric(str_extract(Cruise, "^[0-9]{4}")),
          Survey = str_extract(Cruise, "[0-9]+$"),
          Prefix = if_else(Year < 2016, "HS", "BCSI-"),
@@ -170,7 +172,7 @@ df <- df_orig %>%
          STATION_ID_NUM = str_c(Prefix, Year, Survey, "-", TowNum, sep = ""),
          STATION_ID_CHR = str_c(Prefix, Year, Survey, "-", Station, sep = ""),
          
-         # remove tows where there was no temperature near depth
+         # assign NAs where there was no temperature near depth
          Temp5m = if_else(is.nan(Temp5m), NA_real_, Temp5m),
          Temp6m = if_else(is.nan(Temp6m), NA_real_, Temp6m),
          Temp7m = if_else(is.nan(Temp7m), NA_real_, Temp7m),

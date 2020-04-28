@@ -49,9 +49,14 @@ for (i in 1:numFiles) {
   # cruise
   cruise <- str_replace(import[[grep("MISSION", import)]], "    MISSION             : ", "")
   
-  # station if possible
+  # station or event number
   if (length(grep("STATION", import) > 0)) {
+    if (str_replace(import[[grep("STATION", import)]], "    STATION             : ", "") != "NONE") {
+    
     station <- str_replace(import[[grep("STATION", import)]], "    STATION             : ", "")
+  } else {
+    station <- str_replace(import[[grep("EVENT NUMBER        :", import)]], "    EVENT NUMBER        : ", "")
+    }
   } else {  
     station <- str_replace(import[[grep("EVENT NUMBER        :", import)]], "    EVENT NUMBER        : ", "") 
   }
@@ -165,6 +170,9 @@ for (i in 1:numFiles) {
 # take out of list
 df_orig <- do.call(rbind.data.frame, mylist)
 
+# list of cruises with non-character station ids
+cruise_NonStandard_Stations <- c("")
+
 # convert longitude to decimal degrees
 df <- df_orig %>%
   mutate(LongDeg = as.numeric(str_extract(Longitude, "^[0-9]{3}")),
@@ -175,6 +183,7 @@ df <- df_orig %>%
          Year = as.numeric(str_extract(Cruise, "^[0-9]{4}")),
          Survey = str_extract(Cruise, "[0-9]+$"),
          Prefix = if_else(Year < 2016, "HS", "BCSI-"),
+         
          #**** need to choose which to use based on type of tow number or character ****
          TowNum = str_pad(str_extract(Station, "[0-9]+$"), 3, "left", pad = "0"),
          STATION_ID_NUM = str_c(Prefix, Year, Survey, "-", TowNum, sep = ""),
@@ -195,9 +204,7 @@ df <- df_orig %>%
   
   select(STATION_ID_CHR, STATION_ID_NUM, Year, Cruise, Station, 
          Latitude, Longitude, Temp5m, Temp6m, Temp7m, Temp8m, Temp9m, Temp10m,
-         Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) %>%
-  arrange(STAT)
-
+         Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) 
 # write as csv to review
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")
 write_csv(df, here("Output", "CTD_DATA.csv"), na = "")

@@ -185,21 +185,36 @@ df <- df_orig %>%
          
          # create station id
          Year = as.numeric(str_extract(Cruise, "^[0-9]{4}")),
+         Cruise = if_else(Cruise == "2003-39", "2003-36", Cruise),
          Cruise_mod = str_replace_all(Cruise, fixed("-"), ""),
          
          # fix non standard cruise names
          Cruise_mod = case_when(
            Cruise_mod == "2018093" ~ "201893",
-           Cruise_mod == "	2018-093" ~ "201893",
+           #Cruise_mod == "	2018-093" ~ "201893",
+           Cruise_mod == "199816" ~ "9816",
+           Cruise_mod == "199914" ~ "9914",
+           Cruise_mod == "199817" ~ "9817",
            TRUE ~ Cruise_mod),
          #Survey = str_extract(Cruise, "[0-9]+$"),
          Prefix = if_else(Year < 2016, "HS", "BCSI-"),
          
-         #**** need to choose which to use based on type of tow number or character ****
+         #make station ID with some variation based on cruises
          TowNum = str_pad(str_extract(Station, "[0-9]+$"), 3, "left", pad = "0"),
          STATION_ID_NUM = str_c(Prefix, Cruise_mod, "-", TowNum, sep = ""),
          STATION_ID_CHR = str_c(Prefix, Cruise_mod, "-", Station, sep = ""),
-         STATION_ID = if_else(grepl("SET", toupper(STATION_ID_CHR)) == TRUE, STATION_ID_NUM, STATION_ID_CHR),
+         STATION_ID_CHR = if_else(Cruise == "2009-01", str_extract(STATION_ID_CHR, "(^[^-]+)(?:-[^-]+){1}"),
+                                  STATION_ID_CHR)) %>%
+  
+    # fix some hyphens within stations in ctd files
+  separate(., STATION_ID_CHR, c("StationSurvey", "StationLetters", "StationNumbers"),
+           sep = "-", remove = FALSE) %>%
+  mutate(Station200114 = str_c(StationSurvey, "-", StationLetters, StationNumbers, sep = ""),
+         STATION_ID_CHR = if_else(Cruise == "2001-14", Station200114, STATION_ID_CHR),
+         STATION_ID = case_when(
+           grepl("SET", toupper(STATION_ID_CHR)) ~ STATION_ID_NUM,
+           Cruise == "1998-16" ~ STATION_ID_NUM,
+           TRUE ~ STATION_ID_CHR),
          
          # assign NAs where there was no temperature near depth
          Temp5m = if_else(is.nan(Temp5m), NA_real_, Temp5m),
@@ -221,7 +236,7 @@ df <- df_orig %>%
 # import csv file of all stations to check joins
 stations <- read_csv(here("Input", "EA_STATION_YEARS.csv"), 
                      col_types = cols(
-                       YEAR = col_double(),
+                       Year = col_double(),
                        CRUISE = col_character(),
                        STATION_ID = col_character()
                         )

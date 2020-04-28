@@ -54,6 +54,10 @@ for (i in 1:numFiles) {
     if (str_replace(import[[grep("STATION", import)]], "    STATION             : ", "") != "NONE") {
     
     station <- str_replace(import[[grep("STATION", import)]], "    STATION             : ", "")
+    
+    # remove all space within stations
+    station <- gsub(" ", "", station, fixed = TRUE)
+    
   } else {
     station <- str_replace(import[[grep("EVENT NUMBER        :", import)]], "    EVENT NUMBER        : ", "")
     }
@@ -171,7 +175,7 @@ for (i in 1:numFiles) {
 df_orig <- do.call(rbind.data.frame, mylist)
 
 # list of cruises with non-character station ids
-cruise_NonStandard_Stations <- c("")
+#cruise_NonStandard_Stations <- c("")
 
 # convert longitude to decimal degrees
 df <- df_orig %>%
@@ -205,6 +209,22 @@ df <- df_orig %>%
   select(STATION_ID_CHR, STATION_ID_NUM, Year, Cruise, Station, 
          Latitude, Longitude, Temp5m, Temp6m, Temp7m, Temp8m, Temp9m, Temp10m,
          Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) 
+
+# import csv file of all stations to check joins
+stations <- read_csv(here("Input", "EA_STATION_YEARS.csv"), 
+                     col_types = cols(
+                       YEAR = col_double(),
+                       CRUISE = col_character(),
+                       STATION_ID = col_character()
+                        )
+                      )
+
+# test which stations are not matching up
+test <- df %>%
+  left_join(., stations, by = c("STATION_ID_CHR" = "STATION_ID"))
+
+unique(test$Cruise)
+
 # write as csv to review
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")
 write_csv(df, here("Output", "CTD_DATA.csv"), na = "")

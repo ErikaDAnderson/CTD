@@ -56,7 +56,7 @@ for (i in 1:numFiles) {
     station <- str_replace(import[[grep("STATION", import)]], "    STATION             : ", "")
     
     # remove all space within stations
-    station <- gsub(" ", "", station, fixed = TRUE)
+    station <- str_replace_all(station, fixed(" "), "")
     
   } else {
     station <- str_replace(import[[grep("EVENT NUMBER        :", import)]], "    EVENT NUMBER        : ", "")

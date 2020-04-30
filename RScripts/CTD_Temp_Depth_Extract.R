@@ -102,9 +102,17 @@ for (i in 1:numFiles) {
   # helper function to find mean temperature at different depths
   meanTemp_fn <- function(thisdf, thisdepth, thislatitude) {
     
+    # find the name of the pressure column and rename to something that is standard 
+    # survey 2005-17 has  colon in Presure column name
+    thisdf <- thisdf %>%
+      rename("Pressure" = colnames(select(thisdf, starts_with("Pressure"))))
+
     thispressurePlus <- d2p((thisdepth + 1), thislatitude) 
     thispressureMinus <- d2p((thisdepth - 1), thislatitude)
-    thispressuredf <- subset(thisdf, Pressure > thispressureMinus & Pressure < thispressurePlus)
+
+    thispressuredf <- thisdf %>%
+      filter(Pressure > thispressureMinus) %>%
+      filter(Pressure < thispressurePlus)
     
     # subset for temperature column 
     thistempdf <- thispressuredf %>%
@@ -118,7 +126,7 @@ for (i in 1:numFiles) {
   }
   
   # account for situation when no temperature or pressure recorded in ctd file
-  if ("Pressure" %in% colnames(df) & ncol(select(df, starts_with("Temp"))) != 0) {
+  if (ncol(select(df, starts_with("Pressure"))) != 0 & ncol(select(df, starts_with("Temp"))) != 0) {
     
     # find temperature within + or - 1 m of 
     meantemp5 <- meanTemp_fn(df, 5, thislatitude)
@@ -229,9 +237,10 @@ df <- df_orig %>%
          Temp14m = if_else(is.nan(Temp14m), NA_real_, Temp14m),
          Temp15m = if_else(is.nan(Temp15m), NA_real_, Temp15m)) %>%
   
-  select(STATION_ID, STATION_ID_CHR, STATION_ID_NUM, Year, Cruise, Station, 
+  select(STATION_ID, Year, Cruise, Station, 
          Latitude, Longitude, Temp5m, Temp6m, Temp7m, Temp8m, Temp9m, Temp10m,
-         Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) 
+         Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) %>%
+  arrange(Year, Cruise)
 
 # import csv file of all stations to check joins
 stations <- read_csv(here("Input", "EA_STATION_YEARS.csv"), 
@@ -269,7 +278,9 @@ nrow(df)
 
 # write as csv to review
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")
-write_csv(df, here("Output", "CTD_DATA.csv"), na = "")
+write_csv(df, here("Output", str_c("CTD_DATA_", 
+                   str_replace_all(Sys.Date(), "-", ""),
+                   ".csv")), na = "")
 
 ###################################
 

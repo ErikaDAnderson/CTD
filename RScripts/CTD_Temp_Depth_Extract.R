@@ -114,7 +114,7 @@ for (i in 1:numFiles) {
       mutate_all(., na_if, -99)
     
     # variable names all start with Temperature though
-    meantemp <- round(mean(thistempdf[[1]], na.rm = TRUE), 3)
+    meantemp <- round(mean(thistempdf[[1]], na.rm = TRUE), 4)
   }
   
   # account for situation when no temperature or pressure recorded in ctd file
@@ -242,14 +242,30 @@ stations <- read_csv(here("Input", "EA_STATION_YEARS.csv"),
                         )
                       )
 
+# vector of surveys to omit from checking since already looked at
+omitCruise <- c("2003-16", "1998-16", "2009-43", "2015-56", 
+                "1998-17", "2000-16", "2009-01", "2015-41", 
+                "2015-39", "2006-22", "2002-15", "2014-66",
+                "2015-15", "2005-03", "2013-43", "2006-31",
+                "1999-14", "2013-10")
+
 # test which stations are not matching up
 test <- df %>%
   anti_join(., stations, by = "STATION_ID") %>%
-  group_by(Cruise) %>%
-  count() %>%
-  ungroup() %>%
-  arrange(-n)
+  filter(!(Cruise %in% omitCruise))
+
+# %>%
+#   group_by(Cruise) %>%
+#   count() %>%
+#   ungroup() %>%
+#   arrange(-n)
 # compare them and fix stations to match
+
+# number of cruises
+length(unique(df$Cruise))
+
+# number of observations
+nrow(df)
 
 # write as csv to review
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")

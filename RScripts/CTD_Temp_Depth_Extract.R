@@ -6,8 +6,6 @@
 # Date: 2020-04
 #
 # find cruise, station, temperature at specific depths for ctd casts
-# two types of tow name (numeric or character)
-# both are saved and must choose from csv file
 # save as csv file 
 #
 ######################################################################################
@@ -16,15 +14,16 @@
 library(tidyverse) # data manipulation
 library(stringi) # string manipulation
 library(here) # relative file paths
-library(measurements) # convert coordinate data
 library(seacarb) # pressure to depth at a given latitude
 library(leaflet) # mapping
-library(leaflet.extras)
-library(mapview) # to save leaflet as png
 
 ###################################
 # directory with ctd files
 dir <- here("Input", "CTD_DATA")
+
+# test directory for smaller dataset
+#dir <- here("Input", "2015-15-processed", "Archive", "CTD")
+
 
 # get all ctd files in folder as vector
 ctdFiles = list.files(dir, pattern = "ctd", full.names = TRUE)
@@ -38,7 +37,7 @@ numFiles = length(allCtdFiles)
 mylist <- list()
 
 # loop through all ctd files 
-# load data and find mean temperature near 10 m
+# load data and find mean temperature at ~ 10 meters
 for (i in 1:numFiles) {
   
   thisfile <- allCtdFiles[[i]]
@@ -182,9 +181,6 @@ for (i in 1:numFiles) {
 # take out of list
 df_orig <- do.call(rbind.data.frame, mylist)
 
-# list of cruises with non-character station ids
-#cruise_NonStandard_Stations <- c("")
-
 # convert longitude to decimal degrees
 df <- df_orig %>%
   mutate(LongDeg = as.numeric(str_extract(Longitude, "^[0-9]{3}")),
@@ -199,22 +195,21 @@ df <- df_orig %>%
          # fix non standard cruise names
          Cruise_mod = case_when(
            Cruise_mod == "2018093" ~ "201893",
-           #Cruise_mod == "	2018-093" ~ "201893",
            Cruise_mod == "199816" ~ "9816",
            Cruise_mod == "199914" ~ "9914",
            Cruise_mod == "199817" ~ "9817",
+           Cruise_mod == "200943" ~ "200941", # mislabelled in CTD file
            TRUE ~ Cruise_mod),
-         #Survey = str_extract(Cruise, "[0-9]+$"),
-         Prefix = if_else(Year < 2016, "HS", "BCSI-"),
          
          #make station ID with some variation based on cruises
+         Prefix = if_else(Year < 2016, "HS", "BCSI-"),
          TowNum = str_pad(str_extract(Station, "[0-9]+$"), 3, "left", pad = "0"),
          STATION_ID_NUM = str_c(Prefix, Cruise_mod, "-", TowNum, sep = ""),
          STATION_ID_CHR = str_c(Prefix, Cruise_mod, "-", Station, sep = ""),
          STATION_ID_CHR = if_else(Cruise == "2009-01", str_extract(STATION_ID_CHR, "(^[^-]+)(?:-[^-]+){1}"),
                                   STATION_ID_CHR)) %>%
   
-    # fix some hyphens within stations in ctd files
+    # fix hyphens within stations in ctd files
   separate(., STATION_ID_CHR, c("StationSurvey", "StationLetters", "StationNumbers"),
            sep = "-", remove = FALSE) %>%
   mutate(Station200114 = str_c(StationSurvey, "-", StationLetters, StationNumbers, sep = ""),
@@ -224,7 +219,7 @@ df <- df_orig %>%
            Cruise == "1998-16" ~ STATION_ID_NUM,
            TRUE ~ STATION_ID_CHR),
          
-         # assign NAs where there was no temperature near depth
+         # assign NA where there was no temperature near depth
          Temp5m = if_else(is.nan(Temp5m), NA_real_, Temp5m),
          Temp6m = if_else(is.nan(Temp6m), NA_real_, Temp6m),
          Temp7m = if_else(is.nan(Temp7m), NA_real_, Temp7m),
@@ -237,6 +232,7 @@ df <- df_orig %>%
          Temp14m = if_else(is.nan(Temp14m), NA_real_, Temp14m),
          Temp15m = if_else(is.nan(Temp15m), NA_real_, Temp15m)) %>%
   
+  # simplify and order data
   select(STATION_ID, Year, Cruise, Station, 
          Latitude, Longitude, Temp5m, Temp6m, Temp7m, Temp8m, Temp9m, Temp10m,
          Temp11m, Temp12m, Temp13m, Temp14m, Temp15m, File) %>%
@@ -248,27 +244,24 @@ stations <- read_csv(here("Input", "EA_STATION_YEARS.csv"),
                        Year = col_double(),
                        CRUISE = col_character(),
                        STATION_ID = col_character()
-                        )
-                      )
+                        ))
 
 # vector of surveys to omit from checking since already looked at
-omitCruise <- c("2003-16", "1998-16", "2009-43", "2015-56", 
-                "1998-17", "2000-16", "2009-01", "2015-41", 
-                "2015-39", "2006-22", "2002-15", "2014-66",
-                "2015-15", "2005-03", "2013-43", "2006-31",
-                "1999-14", "2013-10")
+omitCruise <- c("2003-16", "1998-16",  "2015-56", 
+                "2000-16", "2009-01", "1999-14", "2013-10",
+                "2006-22", "2002-15", "2014-66", "2006-31",
+                "2015-15", "2005-03", "2013-43")
 
 # test which stations are not matching up
 test <- df %>%
   anti_join(., stations, by = "STATION_ID") %>%
   filter(!(Cruise %in% omitCruise))
-
+# # used this extra code while testing larger numbers of stations to find survey-wide issues
 # %>%
 #   group_by(Cruise) %>%
 #   count() %>%
 #   ungroup() %>%
 #   arrange(-n)
-# compare them and fix stations to match
 
 # number of cruises
 length(unique(df$Cruise))
@@ -283,6 +276,7 @@ write_csv(df, here("Output", str_c("CTD_DATA_",
                    ".csv")), na = "")
 
 ###################################
+# use to produce heat map to see locations and relative temperatures
 
 # # get max lat and long for survey
 # meanLat <- mean(df$Latitude, na.rm = TRUE)

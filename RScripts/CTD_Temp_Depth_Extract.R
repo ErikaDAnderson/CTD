@@ -278,16 +278,16 @@ write_csv(df, here("Output", str_c("CTD_DATA_",
 ###################################
 # use to produce heat map to see locations and relative temperatures
 
-# # get max lat and long for survey
-# meanLat <- mean(df$Latitude, na.rm = TRUE)
-# meanLong <- mean(df$Longitude, na.rm = TRUE)
-# 
-# # graph results as qc
-# leaflet(df) %>% addTiles() %>%
-#   setView(lng = meanLong, lat = meanLat, zoom = 6) %>%
-#   addHeatmap(lng = ~Longitude, lat = ~Latitude, intensity = ~Temp10m, blur = 15, max = 20, radius = 12)
-# 
-# # need to export manually unless you install PhantomJS
-# # https://stackoverflow.com/questions/31336898/how-to-save-leaflet-in-r-map-as-png-or-jpg-file
+# get max lat and long for survey
+meanLat <- mean(df$Latitude, na.rm = TRUE)
+meanLong <- mean(df$Longitude, na.rm = TRUE)
+
+# graph results as qc
+leaflet(df) %>% addTiles() %>%
+  setView(lng = meanLong, lat = meanLat, zoom = 6) %>%
+  addHeatmap(lng = ~Longitude, lat = ~Latitude, intensity = ~Temp10m, blur = 20, max = 20, radius = 12)
+
+# need to export manually unless you install PhantomJS
+# https://stackoverflow.com/questions/31336898/how-to-save-leaflet-in-r-map-as-png-or-jpg-file
 
 ###################################

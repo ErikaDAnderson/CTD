@@ -19,7 +19,7 @@ library(leaflet) # mapping
 
 ###################################
 # directory with ctd files
-dir <- here("Input", "CTD_DATA")
+dir <- here("Input", "IPES")
 
 # test directory for smaller dataset
 #dir <- here("Input", "2015-15-processed", "Archive", "CTD")

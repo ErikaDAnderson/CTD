@@ -21,7 +21,7 @@ library(leaflet.extras) # function addHeatmap
 
 ###################################
 # directory with ctd files
-dir <- here("Input", "IPES")
+dir <- here("Input", "2019-124_IPES", "Archive", "CTD")
 
 # test directory for smaller dataset
 #dir <- here("Input", "2015-15-processed", "Archive", "CTD")
@@ -207,7 +207,7 @@ df <- df_orig %>%
   arrange(TRIP_YEAR, TRIP_NAME)
 
 # import csv file of all CTD event to check joins
-ctd <- read_csv(here("Input", "EA_202005_CTD_CHECK.csv"), 
+ctd <- read_csv(here("Input", "EA_202006_CTD_CHECK.csv"), 
                    col_names = TRUE,
                    cols(
                      TRIP_YEAR = col_double(),
@@ -231,7 +231,7 @@ nrow(df)
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")
 write_csv(df, here("Output", str_c("CTD_DATA_", 
                    str_replace_all(Sys.Date(), "-", ""),
-                   "_IPES.csv")), na = "")
+                   "_IPES_2019124.csv")), na = "")
 
 ###################################
 # use to produce heat map to see locations and relative temperatures

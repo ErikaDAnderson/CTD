@@ -19,7 +19,7 @@ library(leaflet) # mapping
 
 ###################################
 # directory with ctd files
-dir <- here("Input", "IPES")
+dir <- here("Input", "2019-125-October_Survey_Sea_Crest", "Processed_CTD_Data", "Archive", "CTD")
 
 # test directory for smaller dataset
 #dir <- here("Input", "2015-15-processed", "Archive", "CTD")
@@ -271,7 +271,7 @@ nrow(df)
 
 # write as csv to review
 #write_csv(df, here("Output", "csvFiles", paste0(cruise, ".csv")), na = "")
-write_csv(df, here("Output", str_c("CTD_DATA_", 
+write_csv(df, here("Output", str_c("CTD_DATA_2019125_", 
                    str_replace_all(Sys.Date(), "-", ""),
                    ".csv")), na = "")
 
